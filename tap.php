@@ -6,7 +6,7 @@
  * Description: Take credit card payments on your store. (Features : All In One - Popup, Redirect
  * Author: Waqas Zeeshan
  * Author URI: https://tap.company/
- * Version: 2.2.0
+ * Version: 2.2.1
  */
 
 /* This action hook registers our PHP class as a WooCommerce payment gateway */
@@ -1013,6 +1013,7 @@ function tapwc_init_gateway_class() {
 				);
 
 				if ( is_wp_error( $api_response ) ) {
+					$order->add_order_note( 'Tap API connection error: ' . $api_response->get_error_message() );
 					return array(
 						'result'   => 'failure',
 						'messages' => __( 'Payment gateway error: ', 'tap-woocommerce' ) . $api_response->get_error_message(),
@@ -1022,17 +1023,44 @@ function tapwc_init_gateway_class() {
 				$response_body = wp_remote_retrieve_body( $api_response );
 				$obj = json_decode( $response_body );
 
-				if ( empty( $obj ) || ! isset( $obj->transaction->url ) ) {
-					$error_message = isset( $obj->errors[0]->description ) ? $obj->errors[0]->description : __( 'Invalid response from payment gateway.', 'tap-woocommerce' );
+				// Log response for debugging
+				$order->add_order_note( 'Tap API response: ' . wp_json_encode( $obj ) );
+
+				// Check for API errors first
+				if ( isset( $obj->errors ) && ! empty( $obj->errors ) ) {
+					$error_message = isset( $obj->errors[0]->description ) ? $obj->errors[0]->description : __( 'Payment gateway error', 'tap-woocommerce' );
 					return array(
 						'result'   => 'failure',
 						'messages' => $error_message,
 					);
 				}
 
+				// Get redirect URL - check multiple possible locations
+				$redirect_url = null;
+				if ( isset( $obj->transaction->url ) ) {
+					$redirect_url = $obj->transaction->url;
+				} elseif ( isset( $obj->redirect->url ) ) {
+					$redirect_url = $obj->redirect->url;
+				} elseif ( isset( $obj->url ) ) {
+					$redirect_url = $obj->url;
+				}
+
+				if ( empty( $redirect_url ) ) {
+					$order->add_order_note( 'Tap API: No redirect URL found in response' );
+					return array(
+						'result'   => 'failure',
+						'messages' => __( 'Invalid response from payment gateway.', 'tap-woocommerce' ),
+					);
+				}
+
+				// Store charge ID to prevent duplicate processing
+				if ( isset( $obj->id ) ) {
+					update_post_meta( $order->get_id(), '_tap_charge_id', $obj->id );
+				}
+
 				return array(
 					'result'   => 'success',
-					'redirect' => $obj->transaction->url,
+					'redirect' => $redirect_url,
 				);
 			}
 

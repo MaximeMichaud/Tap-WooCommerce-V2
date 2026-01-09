@@ -12,7 +12,6 @@
             <directory name="vendor" />
             <directory name="assets" />
             <directory name="tests" />
-            <directory name="wp-admin" />
         </ignoreFiles>
     </projectFiles>
 

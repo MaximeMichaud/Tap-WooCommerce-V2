@@ -6,7 +6,7 @@
  * Description: Take credit card payments on your store. (Features : All In One - Popup, Redirect
  * Author: Waqas Zeeshan
  * Author URI: https://tap.company/
- * Version: 2.1.1
+ * Version: 2.2.0
  */
 
 /* This action hook registers our PHP class as a WooCommerce payment gateway */
@@ -134,65 +134,54 @@ function tapwc_init_gateway_class() {
 				}
 			} else {
 				if ( $data['status'] === 'CAPTURED' ) {
-					$refund_url = 'https://api.tap.company/v2/refunds/';
-					$refund_object['charge_id']  = $data['id'];
-					$refund_object['amount']   = $data['amount'];
-					$refund_object['currency'] = $data['currency'];
-					$refund_object['reason']           = 'Order currency and response currency mismatch(fraudulent)';
-					$refund_object['post_url'] = '';
-					$curl = curl_init();
-					curl_setopt_array(
-						$curl,
+					$refund_object = array(
+						'charge_id' => $data['id'],
+						'amount'    => $data['amount'],
+						'currency'  => $data['currency'],
+						'reason'    => 'Order currency and response currency mismatch(fraudulent)',
+						'post_url'  => '',
+					);
+
+					$refund_body_json = wp_json_encode( $refund_object );
+					if ( false === $refund_body_json ) {
+						$order->update_status( 'cancelled' );
+						$order->add_order_note( 'Failed to encode refund request' );
+						return;
+					}
+
+					$refund_response = wp_remote_post(
+						'https://api.tap.company/v2/refunds/',
 						array(
-							CURLOPT_URL => $refund_url,
-							CURLOPT_RETURNTRANSFER => true,
-							CURLOPT_ENCODING => '',
-							CURLOPT_MAXREDIRS => 10,
-							CURLOPT_TIMEOUT => 30,
-							CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-							CURLOPT_CUSTOMREQUEST => 'POST',
-							CURLOPT_POSTFIELDS => json_encode( $refund_object ),
-							CURLOPT_HTTPHEADER => array(
-								'authorization: Bearer ' . $active_sk,
-								'content-type: application/json',
+							'headers' => array(
+								'Authorization' => 'Bearer ' . $active_sk,
+								'Content-Type'  => 'application/json',
 							),
+							'body'    => $refund_body_json,
+							'timeout' => 30,
 						)
 					);
 
-					$refund_response = curl_exec( $curl );
-					$refund_response = json_decode( $refund_response );
+					$refund_body = is_wp_error( $refund_response ) ? null : json_decode( wp_remote_retrieve_body( $refund_response ) );
 					$order->update_status( 'cancelled' );
-					$order->add_order_note( sanitize_text_field( 'Tap payment decllined..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ) . ( 'Refund ID' ) . $refund_response->id ) );
+					$refund_id = $refund_body->id ?? 'N/A';
+					$order->add_order_note( sanitize_text_field( 'Tap payment declined..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ) . ( 'Refund ID' ) . $refund_id ) );
 				}
 
 				if ( $data['status'] === 'AUTHORIZED' ) {
-					$void_url = 'https://api.tap.company/v2/authorize/' . $data['id'] . '/void';
-					$curl = curl_init();
-					curl_setopt_array(
-						$curl,
+					$void_response = wp_remote_post(
+						'https://api.tap.company/v2/authorize/' . $data['id'] . '/void',
 						array(
-							CURLOPT_URL => $void_url,
-							CURLOPT_RETURNTRANSFER => true,
-							CURLOPT_ENCODING => '',
-							CURLOPT_MAXREDIRS => 10,
-							CURLOPT_TIMEOUT => 30,
-							CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-							CURLOPT_CUSTOMREQUEST => 'POST',
-							CURLOPT_POSTFIELDS => '{}',
-							CURLOPT_HTTPHEADER => array(
-								'authorization: Bearer ' . $active_sk,
-								'content-type: application/json',
+							'headers' => array(
+								'Authorization' => 'Bearer ' . $active_sk,
+								'Content-Type'  => 'application/json',
 							),
+							'body'    => '{}',
+							'timeout' => 30,
 						)
 					);
 
-					$void_response = curl_exec( $curl );
-					$void_response = json_decode( $void_response );
-					$err = curl_error( $curl );
-					// curl_close deprecated in PHP 8.0+ - resource auto-freed
-
 					$order->update_status( 'cancelled' );
-					$order->add_order_note( sanitize_text_field( 'Tap payment decllined..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ) ) );
+					$order->add_order_note( sanitize_text_field( 'Tap payment declined..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ) ) );
 				}
 			}
 		}
@@ -227,25 +216,25 @@ function tapwc_init_gateway_class() {
 			} else {
 				$url = 'https://api.tap.company/v2/authorize/';
 			}
-			$curl = curl_init();
-			curl_setopt_array(
-				$curl,
+
+			$api_response = wp_remote_get(
+				$url . $tap_id,
 				array(
-					CURLOPT_URL => $url . $tap_id,
-					CURLOPT_RETURNTRANSFER => true,
-					CURLOPT_ENCODING => '',
-					CURLOPT_MAXREDIRS => 10,
-					CURLOPT_TIMEOUT => 30,
-					CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-					CURLOPT_CUSTOMREQUEST => 'GET',
-					CURLOPT_HTTPHEADER => array(
-						'authorization: Bearer ' . $active_sk,
-						'content-type: application/json',
+					'headers' => array(
+						'Authorization' => 'Bearer ' . $active_sk,
+						'Content-Type'  => 'application/json',
 					),
+					'timeout' => 30,
 				)
 			);
-			$response = curl_exec( $curl );
-			$response = json_decode( $response );
+
+			if ( is_wp_error( $api_response ) ) {
+				$order->update_status( 'cancelled' );
+				$order->add_order_note( 'Tap API error: ' . $api_response->get_error_message() );
+				return;
+			}
+
+			$response = json_decode( wp_remote_retrieve_body( $api_response ) );
 
 			$order_amount = $order->get_total();
 			$order_currency = $order->get_currency();
@@ -337,75 +326,64 @@ function tapwc_init_gateway_class() {
 					}
 				}
 			} elseif ( $response->status === 'CAPTURED' ) {
-					$refund_url = 'https://api.tap.company/v2/refunds/';
-					$refund_object['charge_id']                 = $tap_id;
-					$refund_object['amount']   = $response->amount;
-					$refund_object['currency']               = $response->currency;
-					$refund_object['reason']           = 'Order currency and response currency mismatch(fraudulent)';
-					$refund_object['post_url'] = '';
+				$refund_object = array(
+					'charge_id' => $tap_id,
+					'amount'    => $response->amount,
+					'currency'  => $response->currency,
+					'reason'    => 'Order currency and response currency mismatch(fraudulent)',
+					'post_url'  => '',
+				);
 
-					$curl = curl_init();
-					curl_setopt_array(
-						$curl,
-						array(
-							CURLOPT_URL => $refund_url,
-							CURLOPT_RETURNTRANSFER => true,
-							CURLOPT_ENCODING => '',
-							CURLOPT_MAXREDIRS => 10,
-							CURLOPT_TIMEOUT => 30,
-							CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-							CURLOPT_CUSTOMREQUEST => 'POST',
-							CURLOPT_POSTFIELDS => json_encode( $refund_object ),
-							CURLOPT_HTTPHEADER => array(
-								'authorization: Bearer ' . $active_sk,
-								'content-type: application/json',
-							),
-						)
-					);
-
-					$refund_response = curl_exec( $curl );
-					$refund_response = json_decode( $refund_response );
-					$err = curl_error( $curl );
-					// curl_close deprecated in PHP 8.0+ - resource auto-freed
+				$refund_body_json = wp_json_encode( $refund_object );
+				if ( false === $refund_body_json ) {
 					$order->update_status( 'cancelled' );
-					$order->add_order_note( sanitize_text_field( 'Tap declined payment error' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $tap_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $response->source->payment_method ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $response->reference->payment ) . ( 'Refund ID' ) . ( ':' ) . ( $refund_response->id ) ) );
+					$order->add_order_note( 'Failed to encode refund request' );
+					return;
+				}
+
+				$refund_response = wp_remote_post(
+					'https://api.tap.company/v2/refunds/',
+					array(
+						'headers' => array(
+							'Authorization' => 'Bearer ' . $active_sk,
+							'Content-Type'  => 'application/json',
+						),
+						'body'    => $refund_body_json,
+						'timeout' => 30,
+					)
+				);
+
+				$refund_body = is_wp_error( $refund_response ) ? null : json_decode( wp_remote_retrieve_body( $refund_response ) );
+				$refund_id   = $refund_body->id ?? 'N/A';
+				$order->update_status( 'cancelled' );
+				$order->add_order_note( sanitize_text_field( 'Tap declined payment error' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $tap_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $response->source->payment_method ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $response->reference->payment ) . ( 'Refund ID' ) . ( ':' ) . ( $refund_id ) ) );
+
 				if ( $this->failer_page_id === '' || $this->failer_page_id === 0 ) {
 					$failure_url = $this->get_return_url( $order );
 				} else {
 					$failure_url = get_permalink( $this->failer_page_id );
 				}
-					wc_add_notice( __( 'Transaction Failed', 'woothemes' ), 'error' );
-					wp_safe_redirect( $failure_url );
-					exit;
+				wc_add_notice( __( 'Transaction Failed', 'woothemes' ), 'error' );
+				wp_safe_redirect( $failure_url );
+				exit;
 			} elseif ( $response->status === 'AUTHORIZED' ) {
-				$void_url = 'https://api.tap.company/v2/authorize/' . $tap_id . '/void';
-				$curl = curl_init();
-				curl_setopt_array(
-					$curl,
+				wp_remote_post(
+					'https://api.tap.company/v2/authorize/' . $tap_id . '/void',
 					array(
-						CURLOPT_URL => $void_url,
-						CURLOPT_RETURNTRANSFER => true,
-						CURLOPT_ENCODING => '',
-						CURLOPT_MAXREDIRS => 10,
-						CURLOPT_TIMEOUT => 30,
-						CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-						CURLOPT_CUSTOMREQUEST => 'POST',
-						CURLOPT_POSTFIELDS => '{}',
-						CURLOPT_HTTPHEADER => array(
-							'authorization: Bearer ' . $active_sk,
-							'content-type: application/json',
+						'headers' => array(
+							'Authorization' => 'Bearer ' . $active_sk,
+							'Content-Type'  => 'application/json',
 						),
+						'body'    => '{}',
+						'timeout' => 30,
 					)
 				);
 
-				$void_response = curl_exec( $curl );
-				$void_response = json_decode( $void_response );
-				$err = curl_error( $curl );
-				// curl_close deprecated in PHP 8.0+ - resource auto-freed
 				$order->update_status( 'cancelled' );
 				$order->add_order_note( sanitize_text_field( 'Tap declined payment error' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $tap_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $response->source->payment_method ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $response->reference->payment ) ) );
+
 				if ( $this->failer_page_id === '' || $this->failer_page_id === 0 ) {
-							$failure_url = $this->get_return_url( $order );
+					$failure_url = $this->get_return_url( $order );
 				} else {
 					$failure_url = get_permalink( $this->failer_page_id );
 				}
@@ -1021,35 +999,40 @@ function tapwc_init_gateway_class() {
 					$active_sk = $this->live_secret_key;
 				}
 
-				$curl = curl_init();
-				curl_setopt_array(
-					$curl,
+				$api_response = wp_remote_post(
+					$charge_url,
 					array(
-						CURLOPT_URL => $charge_url,
-						CURLOPT_RETURNTRANSFER => true,
-						CURLOPT_ENCODING => '',
-						CURLOPT_MAXREDIRS => 10,
-						CURLOPT_TIMEOUT => 30,
-						CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-						CURLOPT_CUSTOMREQUEST => 'POST',
-						CURLOPT_POSTFIELDS => $frequest,
-						CURLOPT_HTTPHEADER => array(
-							'authorization: Bearer ' . $active_sk,
-							'content-type: application/json',
-							'lang_code: ' . $language,
+						'headers' => array(
+							'Authorization' => 'Bearer ' . $active_sk,
+							'Content-Type'  => 'application/json',
+							'lang_code'     => $language,
 						),
+						'body'    => $frequest,
+						'timeout' => 30,
 					)
 				);
 
-				$response = curl_exec( $curl );
-				$err = curl_error( $curl );
-				$obj = json_decode( $response );
-				$charge_id   = $obj->id;
-				$redirct_Url = $obj->transaction->url;
+				if ( is_wp_error( $api_response ) ) {
+					return array(
+						'result'   => 'failure',
+						'messages' => __( 'Payment gateway error: ', 'tap-woocommerce' ) . $api_response->get_error_message(),
+					);
+				}
+
+				$response_body = wp_remote_retrieve_body( $api_response );
+				$obj = json_decode( $response_body );
+
+				if ( empty( $obj ) || ! isset( $obj->transaction->url ) ) {
+					$error_message = isset( $obj->errors[0]->description ) ? $obj->errors[0]->description : __( 'Invalid response from payment gateway.', 'tap-woocommerce' );
+					return array(
+						'result'   => 'failure',
+						'messages' => $error_message,
+					);
+				}
 
 				return array(
 					'result'   => 'success',
-					'redirect' => $redirct_Url,
+					'redirect' => $obj->transaction->url,
 				);
 			}
 
@@ -1113,28 +1096,23 @@ function tapwc_init_gateway_class() {
 				$active_sk = $this->live_secret_key;
 			}
 
-			$curl = curl_init();
-
-			curl_setopt_array(
-				$curl,
+			$api_response = wp_remote_post(
+				$refund_url,
 				array(
-					CURLOPT_URL => 'https://api.tap.company/v2/refunds',
-					CURLOPT_RETURNTRANSFER => true,
-					CURLOPT_ENCODING => '',
-					CURLOPT_MAXREDIRS => 10,
-					CURLOPT_TIMEOUT => 30,
-					CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-					CURLOPT_CUSTOMREQUEST => 'POST',
-					CURLOPT_POSTFIELDS => $json_request,
-					CURLOPT_HTTPHEADER => array(
-						'authorization: Bearer ' . $active_sk,
-						'content-type: application/json',
+					'headers' => array(
+						'Authorization' => 'Bearer ' . $active_sk,
+						'Content-Type'  => 'application/json',
 					),
+					'body'    => $json_request,
+					'timeout' => 30,
 				)
 			);
 
-			$response = curl_exec( $curl );
-			$response = json_decode( $response );
+			if ( is_wp_error( $api_response ) ) {
+				return new WP_Error( 'tap_refund_error', $api_response->get_error_message() );
+			}
+
+			$response = json_decode( wp_remote_retrieve_body( $api_response ) );
 			if ( ! empty( $response->id ) ) {
 				if ( $response->status === 'PENDING' ) {
 					$order->add_order_note( sanitize_text_field( 'Tap Refund successful' ) . ( '<br>' ) . 'Refund ID' . ( '<br>' ) . $response->id );

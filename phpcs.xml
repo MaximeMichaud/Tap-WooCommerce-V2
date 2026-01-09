@@ -83,13 +83,6 @@
         <!-- Nonce verification not applicable for external API callbacks (Tap webhook) -->
         <exclude name="WordPress.Security.NonceVerification"/>
 
-        <!-- cURL is required for payment gateway API communication -->
-        <exclude name="WordPress.WP.AlternativeFunctions.curl_curl_init"/>
-        <exclude name="WordPress.WP.AlternativeFunctions.curl_curl_setopt_array"/>
-        <exclude name="WordPress.WP.AlternativeFunctions.curl_curl_exec"/>
-        <exclude name="WordPress.WP.AlternativeFunctions.curl_curl_error"/>
-        <exclude name="WordPress.WP.AlternativeFunctions.curl_curl_close"/>
-
         <!-- json_encode needed for API payloads -->
         <exclude name="WordPress.WP.AlternativeFunctions.json_encode_json_encode"/>
 

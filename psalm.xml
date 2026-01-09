@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<psalm
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="vendor/vimeo/psalm/config.xsd"
+    errorLevel="8"
+    findUnusedBaselineEntry="false"
+    findUnusedCode="false"
+    resolveFromConfigFile="true">
+
+    <projectFiles>
+        <directory name="." />
+        <ignoreFiles>
+            <directory name="vendor" />
+            <directory name="assets" />
+        </ignoreFiles>
+    </projectFiles>
+
+    <!-- Suppress all issues for legacy code -->
+    <issueHandlers>
+        <MissingReturnType errorLevel="suppress" />
+        <MissingParamType errorLevel="suppress" />
+        <MixedArgument errorLevel="suppress" />
+        <MixedAssignment errorLevel="suppress" />
+        <MixedMethodCall errorLevel="suppress" />
+        <MixedPropertyFetch errorLevel="suppress" />
+        <MixedOperand errorLevel="suppress" />
+        <MixedArrayAccess errorLevel="suppress" />
+        <MixedArrayOffset errorLevel="suppress" />
+        <UndefinedThisPropertyFetch errorLevel="suppress" />
+        <UndefinedPropertyAssignment errorLevel="suppress" />
+        <UndefinedPropertyFetch errorLevel="suppress" />
+        <UnusedVariable errorLevel="suppress" />
+        <InvalidGlobal errorLevel="suppress" />
+        <PossiblyInvalidMethodCall errorLevel="suppress" />
+        <RiskyTruthyFalsyComparison errorLevel="suppress" />
+        <UndefinedClass errorLevel="suppress" />
+        <UndefinedFunction errorLevel="suppress" />
+        <InvalidReturnType errorLevel="suppress" />
+        <InvalidReturnStatement errorLevel="suppress" />
+        <InvalidFalsableReturnType errorLevel="suppress" />
+        <PossiblyUndefinedVariable errorLevel="suppress" />
+        <UndefinedMagicMethod errorLevel="suppress" />
+        <UndefinedInterfaceMethod errorLevel="suppress" />
+        <UndefinedConstant errorLevel="suppress" />
+        <DuplicateArrayKey errorLevel="suppress" />
+        <DuplicateClass errorLevel="suppress" />
+        <MissingOverrideAttribute errorLevel="suppress" />
+        <PossiblyNullReference errorLevel="suppress" />
+        <PossiblyNullPropertyFetch errorLevel="suppress" />
+        <PossiblyNullArgument errorLevel="suppress" />
+        <RedundantCondition errorLevel="suppress" />
+        <TypeDoesNotContainType errorLevel="suppress" />
+        <DeprecatedClass errorLevel="suppress" />
+        <DeprecatedMethod errorLevel="suppress" />
+        <DeprecatedProperty errorLevel="suppress" />
+        <UnusedParam errorLevel="suppress" />
+        <UnusedClosureParam errorLevel="suppress" />
+        <UndefinedDocblockClass errorLevel="suppress" />
+        <UndefinedGlobalVariable errorLevel="suppress" />
+        <InvalidArgument errorLevel="suppress" />
+        <InvalidPropertyAssignmentValue errorLevel="suppress" />
+        <InvalidScalarArgument errorLevel="suppress" />
+        <MismatchingDocblockParamType errorLevel="suppress" />
+        <MismatchingDocblockReturnType errorLevel="suppress" />
+        <ParamNameMismatch errorLevel="suppress" />
+        <ReservedWord errorLevel="suppress" />
+        <UndefinedMethod errorLevel="suppress" />
+        <MissingDependency errorLevel="suppress" />
+    </issueHandlers>
+
+</psalm>

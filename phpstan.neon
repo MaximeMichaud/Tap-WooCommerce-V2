@@ -1,0 +1,46 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - .
+    excludePaths:
+        - vendor/*
+        - assets/*
+    scanFiles:
+        - vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
+        - vendor/php-stubs/woocommerce-stubs/woocommerce-packages-stubs.php
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
+
+    # Documented ignores with justification
+    # Each ignore should have a corresponding TODO or issue to fix
+    ignoreErrors:
+        # STRUCTURAL ISSUE: WC_Tap_Gateway class defined inside tap_init_gateway_class()
+        # This is a legacy WordPress pattern. Refactoring requires:
+        # 1. Moving class to separate file (class-wc-tap-gateway.php)
+        # 2. Conditional require after plugins_loaded
+        # 3. Extensive testing of payment flows
+        # TODO: Create issue to refactor class structure
+        - '#unknown class WC_Tap_Gateway#'
+        - '#Instantiated class WC_Tap_Gateway not found#'
+
+        # WordPress constant defined at runtime, not available during static analysis
+        # WP_PLUGIN_URL is a core WordPress constant
+        - '#Constant WP_PLUGIN_URL not found#'
+
+        # WordPress pattern: process_admin_options() returns bool
+        # This is standard WooCommerce payment gateway behavior
+        - '#Action callback returns bool but should not return anything#'
+
+        # json_decode returns stdClass|null, property access needs runtime checks
+        # Full fix requires adding null checks throughout API response handling
+        # TODO: Add proper response validation with typed DTOs
+        - '#Access to an undefined property object::#'
+
+        # Property assigned but used by parent class (AbstractPaymentMethodType)
+        - '#Property WC_Tap_Blocks_Support::\$asset_api is never read#'
+
+        # False positive: exit in if block doesn't make else unreachable
+        - '#If condition is always true#'

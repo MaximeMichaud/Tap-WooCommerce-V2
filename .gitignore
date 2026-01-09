@@ -1,0 +1,18 @@
+# Dependencies
+vendor/
+node_modules/
+composer.phar
+composer.lock
+
+# macOS
+.DS_Store
+*/.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+*.zip

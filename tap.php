@@ -6,7 +6,7 @@
  * Description: Take credit card payments on your store. (Features : All In One - Popup, Redirect
  * Author: Waqas Zeeshan
  * Author URI: https://tap.company/
- * Version: 2.2.1
+ * Version: 2.2.2
  */
 
 /* This action hook registers our PHP class as a WooCommerce payment gateway */
@@ -114,14 +114,15 @@ function tapwc_init_gateway_class() {
 			}
 
 			$order_currency = $order->get_currency();
-			$order_amount = $order->get_total();
+			$order_amount = (float) $order->get_total();
 
 			if ( $status !== 'CAPTURED' && $status !== 'AUTHORIZED' ) {
 				$order->update_status( 'cancelled' );
 				$order->add_order_note( sanitize_text_field( 'Tap payment failed..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ) ) );
 
 			}
-			if ( ( $order_amount === $data['amount'] ) && ( $order_currency === $data['currency'] ) ) {
+			// Compare amounts as floats to avoid string/number mismatch
+			if ( ( $order_amount === (float) $data['amount'] ) && ( $order_currency === $data['currency'] ) ) {
 				if ( $status === 'CAPTURED' ) {
 					$order->update_status( 'processing' );
 					$order->add_order_note( sanitize_text_field( 'Tap payment successful..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ) ) );
@@ -236,7 +237,7 @@ function tapwc_init_gateway_class() {
 
 			$response = json_decode( wp_remote_retrieve_body( $api_response ) );
 
-			$order_amount = $order->get_total();
+			$order_amount = (float) $order->get_total();
 			$order_currency = $order->get_currency();
 			if ( $response->status !== 'CAPTURED' && $response->status !== 'AUTHORIZED' ) {
 				$order->update_status( 'cancelled' );
@@ -279,8 +280,8 @@ function tapwc_init_gateway_class() {
 				wp_safe_redirect( $cart_url );
 				exit;
 			}
-			// echo 'order amount--'.$order_amount.'response amount--'.$response->amount.'order currency--'.$order_currency.'--response currency'.$response->currency;exit;
-			if ( ( $order_amount === $response->amount ) && ( $order_currency === $response->currency ) ) {
+			// Compare amounts as floats to avoid string/number mismatch
+			if ( ( $order_amount === (float) $response->amount ) && ( $order_currency === $response->currency ) ) {
 
 				if ( ! empty( $tap_id ) && $this->payment_mode === 'charge' ) {
 					if ( $response->status === 'CAPTURED' ) {

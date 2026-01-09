@@ -1,25 +1,142 @@
 <?xml version="1.0"?>
 <ruleset name="Tap WooCommerce">
-    <description>Tap WooCommerce Payment Gateway coding standards</description>
+    <description>Tap WooCommerce Payment Gateway coding standards based on WordPress Coding Standards</description>
 
     <!-- Scan these files -->
     <file>.</file>
 
-    <!-- Exclude directories -->
+    <!-- Exclude vendor directory -->
     <exclude-pattern>*/vendor/*</exclude-pattern>
-    <exclude-pattern>*/node_modules/*</exclude-pattern>
+
+    <!-- Exclude all assets (JS/CSS) -->
     <exclude-pattern>*/assets/*</exclude-pattern>
+
+    <!-- Exclude node_modules if present -->
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
 
     <!-- Show sniff codes in all reports -->
     <arg value="ps"/>
     <arg name="colors"/>
+
+    <!-- Scan only PHP files -->
     <arg name="extensions" value="php"/>
+
+    <!-- Set default encoding -->
     <arg name="encoding" value="utf-8"/>
+
+    <!-- Show progress -->
     <arg value="p"/>
+
+    <!-- Set number of parallel jobs -->
     <arg name="parallel" value="8"/>
 
-    <!-- PHPCompatibility checks -->
+    <!-- WordPress Coding Standards -->
+    <rule ref="WordPress">
+        <!-- Exclude inline comment formatting rules -->
+        <exclude name="Squiz.Commenting.InlineComment.InvalidEndChar"/>
+
+        <!-- Exclude missing comments for classes, functions, parameters -->
+        <exclude name="Squiz.Commenting.ClassComment.Missing"/>
+        <exclude name="Squiz.Commenting.FunctionComment.Missing"/>
+        <exclude name="Squiz.Commenting.FunctionComment.MissingParamComment"/>
+        <exclude name="Squiz.Commenting.FunctionComment.MissingParamTag"/>
+        <exclude name="Generic.Commenting.DocComment.MissingShort"/>
+        <exclude name="Squiz.Commenting.VariableComment.Missing"/>
+        <exclude name="Squiz.Commenting.FileComment.Missing"/>
+        <exclude name="Squiz.Commenting.FileComment.WrongStyle"/>
+        <exclude name="Squiz.Commenting.FunctionComment.ParamCommentFullStop"/>
+        <exclude name="Squiz.Commenting.BlockComment.HasEmptyLineBefore"/>
+
+        <!-- Exclude Yoda Conditions notices -->
+        <exclude name="WordPress.PHP.YodaConditions.NotYoda"/>
+
+        <!-- Exclude underscore prefix warning for private properties -->
+        <exclude name="PSR2.Classes.PropertyDeclaration.Underscore"/>
+
+        <!-- Exclude unused parameter warnings -->
+        <exclude name="Generic.CodeAnalysis.UnusedFunctionParameter"/>
+
+        <!-- Exclude strict separation of function/class declarations -->
+        <exclude name="PSR1.Files.SideEffects.FoundWithSymbols"/>
+
+        <!-- Allow polyfill functions with classes -->
+        <exclude name="Universal.Files.SeparateFunctionsFromOO.Mixed"/>
+
+        <!-- Allow slow meta queries (required for plugin functionality) -->
+        <exclude name="WordPress.DB.SlowDBQuery.slow_db_query_meta_key"/>
+        <exclude name="WordPress.DB.SlowDBQuery.slow_db_query_meta_value"/>
+
+        <!-- Exclude member variable comment style -->
+        <exclude name="Squiz.Commenting.VariableComment.WrongStyle"/>
+
+        <!-- Exclude strict equals sign alignment -->
+        <exclude name="Generic.Formatting.MultipleStatementAlignment.NotSameWarning"/>
+        <exclude name="WordPress.Arrays.MultipleStatementAlignment.DoubleArrowNotAligned"/>
+
+        <!-- Payment Gateway specific exclusions -->
+        <!-- Nonce verification not applicable for external API callbacks (Tap webhook) -->
+        <exclude name="WordPress.Security.NonceVerification"/>
+
+        <!-- cURL is required for payment gateway API communication -->
+        <exclude name="WordPress.WP.AlternativeFunctions.curl_curl_init"/>
+        <exclude name="WordPress.WP.AlternativeFunctions.curl_curl_setopt_array"/>
+        <exclude name="WordPress.WP.AlternativeFunctions.curl_curl_exec"/>
+        <exclude name="WordPress.WP.AlternativeFunctions.curl_curl_error"/>
+        <exclude name="WordPress.WP.AlternativeFunctions.curl_curl_close"/>
+
+        <!-- json_encode needed for API payloads -->
+        <exclude name="WordPress.WP.AlternativeFunctions.json_encode_json_encode"/>
+
+        <!-- File naming - legacy structure -->
+        <exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+        <exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+
+        <!-- Variable naming - legacy code uses camelCase -->
+        <exclude name="WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase"/>
+
+        <!-- Commented out code detection - false positives with debug code -->
+        <exclude name="Squiz.PHP.CommentedOutCode.Found"/>
+    </rule>
+
+    <!-- PHPCompatibility for PHP 8.1+ -->
     <rule ref="PHPCompatibilityWP"/>
     <config name="testVersion" value="8.1-"/>
+
+    <!-- Text domain configuration -->
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="tap-woocommerce"/>
+                <element value="woothemes"/>
+                <element value="kdc"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- Prefix configuration - using tapwc (4+ chars required) -->
+    <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+        <properties>
+            <property name="prefixes" type="array">
+                <element value="tapwc"/>
+                <element value="TAPWC"/>
+                <element value="tap_wc"/>
+                <element value="TAP_WC"/>
+                <element value="wc_tap"/>
+                <element value="WC_Tap"/>
+                <element value="woocommerce"/>
+                <element value="woocommerce_gateway"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- Allow short array syntax -->
+    <rule ref="Generic.Arrays.DisallowShortArraySyntax.Found">
+        <severity>0</severity>
+    </rule>
+
+    <!-- Enqueue version parameter - allow empty for external CDN scripts -->
+    <rule ref="WordPress.WP.EnqueuedResourceParameters.NoExplicitVersion">
+        <type>warning</type>
+    </rule>
 
 </ruleset>

@@ -4,8 +4,7 @@
     xsi:noNamespaceSchemaLocation="vendor/vimeo/psalm/config.xsd"
     errorLevel="8"
     findUnusedBaselineEntry="false"
-    findUnusedCode="false"
-    resolveFromConfigFile="true">
+    findUnusedCode="false">
 
     <projectFiles>
         <directory name="." />
@@ -15,8 +14,18 @@
         </ignoreFiles>
     </projectFiles>
 
-    <!-- Suppress all issues for legacy code -->
+    <!-- Stubs disabled due to Psalm crash with php-stubs/woocommerce-stubs v10.4.2 -->
+    <!-- See: https://github.com/vimeo/psalm/issues -->
+    <!--
+    <stubs>
+        <file name="vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php" />
+        <file name="vendor/php-stubs/wordpress-stubs/wordpress-stubs.php" />
+    </stubs>
+    -->
+
+    <!-- Suppress known issues from inherited code - same as dianxiaomi -->
     <issueHandlers>
+        <MissingDependency errorLevel="suppress" />
         <MissingReturnType errorLevel="suppress" />
         <MissingParamType errorLevel="suppress" />
         <MixedArgument errorLevel="suppress" />
@@ -24,8 +33,6 @@
         <MixedMethodCall errorLevel="suppress" />
         <MixedPropertyFetch errorLevel="suppress" />
         <MixedOperand errorLevel="suppress" />
-        <MixedArrayAccess errorLevel="suppress" />
-        <MixedArrayOffset errorLevel="suppress" />
         <UndefinedThisPropertyFetch errorLevel="suppress" />
         <UndefinedPropertyAssignment errorLevel="suppress" />
         <UndefinedPropertyFetch errorLevel="suppress" />
@@ -45,27 +52,6 @@
         <DuplicateArrayKey errorLevel="suppress" />
         <DuplicateClass errorLevel="suppress" />
         <MissingOverrideAttribute errorLevel="suppress" />
-        <PossiblyNullReference errorLevel="suppress" />
-        <PossiblyNullPropertyFetch errorLevel="suppress" />
-        <PossiblyNullArgument errorLevel="suppress" />
-        <RedundantCondition errorLevel="suppress" />
-        <TypeDoesNotContainType errorLevel="suppress" />
-        <DeprecatedClass errorLevel="suppress" />
-        <DeprecatedMethod errorLevel="suppress" />
-        <DeprecatedProperty errorLevel="suppress" />
-        <UnusedParam errorLevel="suppress" />
-        <UnusedClosureParam errorLevel="suppress" />
-        <UndefinedDocblockClass errorLevel="suppress" />
-        <UndefinedGlobalVariable errorLevel="suppress" />
-        <InvalidArgument errorLevel="suppress" />
-        <InvalidPropertyAssignmentValue errorLevel="suppress" />
-        <InvalidScalarArgument errorLevel="suppress" />
-        <MismatchingDocblockParamType errorLevel="suppress" />
-        <MismatchingDocblockReturnType errorLevel="suppress" />
-        <ParamNameMismatch errorLevel="suppress" />
-        <ReservedWord errorLevel="suppress" />
-        <UndefinedMethod errorLevel="suppress" />
-        <MissingDependency errorLevel="suppress" />
     </issueHandlers>
 
 </psalm>

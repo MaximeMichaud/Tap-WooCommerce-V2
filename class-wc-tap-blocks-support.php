@@ -35,7 +35,7 @@ final class WC_Tap_Blocks_Support extends AbstractPaymentMethodType {
 	 * Initializes the payment method type.
 	 */
 	public function initialize() {
-		$this->settings = get_option( 'woocommerce_tap_settings', [] );
+		$this->settings = get_option( 'woocommerce_tap_settings', array() );
 	}
 
 	/**
@@ -53,14 +53,15 @@ final class WC_Tap_Blocks_Support extends AbstractPaymentMethodType {
 	 * @return array
 	 */
 	public function get_payment_method_script_handles() {
-		$dependencies = [];
-		wp_register_script( 'woocommerce_wc_payment_method_tap', 
-			plugins_url('wc-payment-method-tap.js', __FILE__ ),
-			 array_merge([], $dependencies ),
-			 '',
-			 true
-			);
-		return ['woocommerce_wc_payment_method_tap'];
+		$dependencies = array();
+		wp_register_script(
+			'woocommerce_wc_payment_method_tap',
+			plugins_url( 'wc-payment-method-tap.js', __FILE__ ),
+			array_merge( array(), $dependencies ),
+			'2.1.1',
+			true
+		);
+		return array( 'woocommerce_wc_payment_method_tap' );
 	}
 
 	/**
@@ -69,11 +70,11 @@ final class WC_Tap_Blocks_Support extends AbstractPaymentMethodType {
 	 * @return array
 	 */
 	public function get_payment_method_data() {
-		return [
+		return array(
 			'title'       => $this->get_setting( 'title' ),
 			'description' => $this->get_setting( 'description' ),
 			'supports'    => $this->get_supported_features(),
-		];
+		);
 	}
 
 	/**
@@ -96,6 +97,7 @@ final class WC_Tap_Blocks_Support extends AbstractPaymentMethodType {
 		 * @param string $name Gateway name.
 		 * @return array Updated list of supported features.
 		 */
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce Blocks hook
 		return apply_filters( '__experimental_woocommerce_blocks_payment_gateway_features_list', $features, $this->get_name() );
 	}
 }

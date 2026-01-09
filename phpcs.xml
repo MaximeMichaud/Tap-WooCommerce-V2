@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <ruleset name="Tap WooCommerce">
-    <description>Tap WooCommerce Payment Gateway - PHPCompatibility only (legacy code)</description>
+    <description>Tap WooCommerce Payment Gateway coding standards</description>
 
     <!-- Scan these files -->
     <file>.</file>
@@ -18,7 +18,7 @@
     <arg value="p"/>
     <arg name="parallel" value="8"/>
 
-    <!-- Only run PHPCompatibility checks for now -->
+    <!-- PHPCompatibility checks -->
     <rule ref="PHPCompatibilityWP"/>
     <config name="testVersion" value="8.1-"/>
 

@@ -16,3 +16,6 @@ composer.lock
 
 # Build artifacts
 *.zip
+
+# Test stub directories
+wp-admin/

@@ -16,7 +16,8 @@
         "php-stubs/woocommerce-stubs": "^9.0",
         "php-stubs/wordpress-stubs": "^6.7",
         "vimeo/psalm": "^5.0 || ^6.0",
-        "humanmade/psalm-plugin-wordpress": "^3.0"
+        "humanmade/psalm-plugin-wordpress": "^3.0",
+        "phpunit/phpunit": "^10.0 || ^11.0 || ^12.0"
     },
     "config": {
         "allow-plugins": {
@@ -24,6 +25,7 @@
         }
     },
     "scripts": {
+        "test": "phpunit",
         "phpcs": "phpcs",
         "phpcbf": "phpcbf",
         "phpstan": "phpstan analyse --memory-limit=1G",
@@ -32,6 +34,10 @@
             "@phpcs",
             "@phpstan",
             "@psalm"
+        ],
+        "check-all": [
+            "@lint",
+            "@test"
         ]
     }
 }

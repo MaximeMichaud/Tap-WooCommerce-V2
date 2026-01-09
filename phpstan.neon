@@ -8,6 +8,8 @@ parameters:
     excludePaths:
         - vendor/*
         - assets/*
+        - tests/*
+        - wp-admin/*
     scanFiles:
         - vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
         - vendor/php-stubs/woocommerce-stubs/woocommerce-packages-stubs.php

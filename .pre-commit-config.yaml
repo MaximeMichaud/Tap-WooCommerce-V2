@@ -45,6 +45,16 @@ repos:
         always_run: true
         pass_filenames: false
 
+  # PHPUnit (tests)
+  - repo: local
+    hooks:
+      - id: phpunit
+        name: PHPUnit
+        entry: bash -c 'mkdir -p wp-admin/includes && echo "<?php // stub" > wp-admin/includes/class-wp-filesystem-base.php && echo "<?php // stub" > wp-admin/includes/class-wp-filesystem-direct.php && php vendor/bin/phpunit --no-progress'
+        language: system
+        always_run: true
+        pass_filenames: false
+
   # Composer validation
   - repo: local
     hooks:

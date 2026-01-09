@@ -14,6 +14,12 @@
     <!-- Exclude node_modules if present -->
     <exclude-pattern>*/node_modules/*</exclude-pattern>
 
+    <!-- Exclude tests (mocks don't follow WP standards) -->
+    <exclude-pattern>*/tests/*</exclude-pattern>
+
+    <!-- Exclude wp-admin stubs (test files) -->
+    <exclude-pattern>*/wp-admin/*</exclude-pattern>
+
     <!-- Show sniff codes in all reports -->
     <arg value="ps"/>
     <arg name="colors"/>

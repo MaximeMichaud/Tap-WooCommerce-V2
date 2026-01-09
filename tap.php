@@ -125,7 +125,7 @@ function tapwc_init_gateway_class() {
 				if ( $status === 'CAPTURED' ) {
 					$order->update_status( 'processing' );
 					$order->add_order_note( sanitize_text_field( 'Tap payment successful..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ) ) );
-					$order->reduce_order_stock();
+					wc_reduce_stock_levels( $order->get_id() );
 					update_option( 'webhook_debug', $_GET );
 				} elseif ( $status === 'AUTHORIZED' ) {
 					$order->update_status( 'pending' );

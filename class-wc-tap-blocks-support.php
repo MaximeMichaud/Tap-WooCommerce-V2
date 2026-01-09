@@ -6,8 +6,6 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * WC_Tap_Blocks_Support class.
- *
- * @extends AbstractPaymentMethodType
  */
 final class WC_Tap_Blocks_Support extends AbstractPaymentMethodType {
 	/**

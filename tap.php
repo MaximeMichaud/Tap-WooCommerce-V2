@@ -256,6 +256,9 @@ function tap_init_gateway_class() {
 			$order->add_order_note(sanitize_text_field('Tap payment failed').("<br>").('ID').(':'). ($_GET['tap_id'].("<br>").('Payment Type :') . ($response->source->payment_method).("<br>").('Payment Ref:'). ($response->reference->payment)));
 			$items = $order->get_items();
 	 		foreach ( $items as $item ) {
+	 			if ( ! $item instanceof WC_Order_Item_Product ) {
+	 				continue;
+	 			}
 	    		$product_name = $item->get_name();
 	    		$product_quantity = $item->get_quantity();
 	   		 	$product_id = $item->get_product_id();
@@ -265,14 +268,16 @@ function tap_init_gateway_class() {
 	    		$woocommerce->cart->add_to_cart( $product_id, $product_quantity, $product_variation_id , $variationName);
 			}
 			$failure_url = get_permalink($this->failer_page_id);
+			wc_add_notice( __('Transaction Failed', 'woothemes'), 'error' );
 			wp_redirect($failure_url);
-			wc_add_notice( __('Transaction Failed ', 'woothemes') . $error_message, 'error' );
-		    return;
 			exit;
  		}
 	 	if (empty($_GET['tap_id'])) {
 	 		$items = $order->get_items();
 	 		foreach ( $items as $item ) {
+	 			if ( ! $item instanceof WC_Order_Item_Product ) {
+	 				continue;
+	 			}
 	    		$product_name = $item->get_name();
 	    		$product_quantity = $item->get_quantity();
 	   		 	$product_id = $item->get_product_id();
@@ -283,8 +288,9 @@ function tap_init_gateway_class() {
 			}
 
 		 	$cart_url = $woocommerce->cart->get_cart_url();
-		 	update_status('cancelled');
-		 	wp_redirect($cart_url);	
+		 	$order->update_status('cancelled');
+		 	wp_redirect($cart_url);
+		 	exit;	
 	 	}
 	 	//echo 'order amount--'.$order_amount.'response amount--'.$response->amount.'order currency--'.$order_currency.'--response currency'.$response->currency;exit;
  		if (($order_amount == $response->amount) && ($order_currency == $response->currency)) { 
@@ -293,7 +299,7 @@ function tap_init_gateway_class() {
 				if ($response->status == 'CAPTURED') {
 					$order->update_status('processing');
 					$order->payment_complete($_GET['tap_id']);
-						update_post_meta( $order->id, '_transaction_id', $_GET['tap_id']);
+						update_post_meta( $order->get_id(), '_transaction_id', $_GET['tap_id']);
 					$order->set_transaction_id( $_GET['tap_id'] );
 					$order->add_order_note(sanitize_text_field('Tap payment successful').("<br>").('ID').(':'). ($_GET['tap_id'].("<br>").('Payment Type :') . ($response->source->payment_method).("<br>").('Payment Ref:'). ($response->reference->payment)));
 						$order->payment_complete($_GET['tap_id']);
@@ -325,11 +331,10 @@ function tap_init_gateway_class() {
 							$failure_url =  $this->get_return_url($order);
 						} else {
 							$failure_url = get_permalink($this->failer_page_id);
-							wp_redirect($failure_url);
-							wc_add_notice( __('Transaction Failed ', 'woothemes') . $error_message, 'error' );
-                   	return;
-							exit;
 						}
+						wc_add_notice( __('Transaction Failed', 'woothemes'), 'error' );
+						wp_redirect($failure_url);
+						exit;
 				}
  			}
 	 	}
@@ -369,10 +374,10 @@ function tap_init_gateway_class() {
 					$failure_url =  $this->get_return_url($order);
 				} else {
 					$failure_url = get_permalink($this->failer_page_id);
-					wp_redirect($failure_url);
-					wc_add_notice( __('Transaction Failed ', 'woothemes') . $error_message, 'error' );
-                   		return;
-                }
+				}
+				wc_add_notice( __('Transaction Failed', 'woothemes'), 'error' );
+				wp_redirect($failure_url);
+				exit;
 			}
 
 			else if ($response->status == 'AUTHORIZED')
@@ -404,10 +409,10 @@ function tap_init_gateway_class() {
 								$failure_url =  $this->get_return_url($order);
 				} else {
 					$failure_url = get_permalink($this->failer_page_id);
-					wp_redirect($failure_url);
-					wc_add_notice( __('Transaction Failed ', 'woothemes') . $error_message, 'error' );
-                   	return;
-                }
+				}
+				wc_add_notice( __('Transaction Failed', 'woothemes'), 'error' );
+				wp_redirect($failure_url);
+				exit;
             }
 	 	}
 	}
@@ -429,12 +434,12 @@ function tap_init_gateway_class() {
  		}
  		$merchant_id = $this->merchant_id;
  		$ref = '';
- 		if ($order->currency=="KWD"){
-			$Total_price = number_format((float)$order->total, 3, '.', '');
+ 		if ($order->get_currency()=="KWD"){
+			$Total_price = number_format((float)$order->get_total(), 3, '.', '');
 		} else {
-			$Total_price = number_format((float)$order->total, 2, '.', '');
+			$Total_price = number_format((float)$order->get_total(), 2, '.', '');
 		}
-        $Hash = 'x_publickey'. $active_pk.'x_amount'.$Total_price.'x_currency'.$order->currency.'x_transaction'.$ref.'x_post'.get_site_url()."/wc-api/tap_webhook";
+        $Hash = 'x_publickey'. $active_pk.'x_amount'.$Total_price.'x_currency'.$order->get_currency().'x_transaction'.$ref.'x_post'.get_site_url()."/wc-api/tap_webhook";
         $hashstring = hash_hmac('sha256', $Hash, $active_sk);
  		$country_code = $this->getStorePhoneCountryCode($order->get_billing_country());
 
@@ -442,10 +447,10 @@ function tap_init_gateway_class() {
         $first_name = $current_user->user_firstname;
         $last_name  = $current_user->user_lastname;
         if(empty($first_name)){
-         	$first_name = $order->billing_first_name;
+         	$first_name = $order->get_billing_first_name();
         }
         if(empty($last_name)){
-         	$last_name = $order->billing_last_name;
+         	$last_name = $order->get_billing_last_name();
         }
  		echo '<div id="tap_root"></div>';
  			echo '<input type="hidden" id="publishable_key" value="' . $this->live_public_key . '" />';
@@ -453,7 +458,7 @@ function tap_init_gateway_class() {
         echo '<input type="hidden" id="testmode" value="' . $this->testmode . '" />';
         echo '<input type="hidden" id="post_url" value="' . get_site_url()."/wc-api/tap_webhook" . '" />';
  		echo '<input type="hidden" id="tap_end_url" value="' . $this->get_return_url($order) . '" />';
- 		echo '<input type="hidden" id="order_id" value="' . $order->id . '" />';
+ 		echo '<input type="hidden" id="order_id" value="' . $order->get_id() . '" />';
  		echo '<input type="hidden" id="hashstring" value="' . $hashstring . '" />';
  		echo '<input type="hidden" id="ui_language" value="' . $this->ui_language . '" />';
  		echo '<input type="hidden" id="countrycode" value="' . $country_code . '" />';
@@ -461,12 +466,12 @@ function tap_init_gateway_class() {
  		echo '<input type="hidden" id="chg" value="' . $this->payment_mode . '" />';
  		echo '<input type="hidden" id="save_card" value="' . $this->save_card . '" />';
  		echo '<input type="hidden" id="payment_mode" value="' . $this->payment_mode . '" />';
- 		echo '<input type="hidden" id="amount" value="' . $order->total . '" />';
- 		echo '<input type="hidden" id="currency" value="' . $order->currency . '" />';
+ 		echo '<input type="hidden" id="amount" value="' . $order->get_total() . '" />';
+ 		echo '<input type="hidden" id="currency" value="' . $order->get_currency() . '" />';
  		echo '<input type="hidden" id="billing_first_name" value="' . $first_name . '" />';
  		echo '<input type="hidden" id="billing_last_name" value="' . $last_name . '" />';
- 		echo '<input type="hidden" id="billing_email" value="' . $order->billing_email . '" />';
- 		echo '<input type="hidden" id="billing_phone" value="' . $order->billing_phone . '" />';
+ 		echo '<input type="hidden" id="billing_email" value="' . $order->get_billing_email() . '" />';
+ 		echo '<input type="hidden" id="billing_phone" value="' . $order->get_billing_phone() . '" />';
  		echo '<input type="hidden" id="customer_user_id" value="' . get_current_user_id() . '" />';
  		echo '<input type="hidden" id="merchant_id" value="'. $merchant_id .'"/>';
 
@@ -476,7 +481,7 @@ function tap_init_gateway_class() {
  		$shipping_carrier = [];// Initialize a new empty object
 		foreach ($shipping_methods as $shipping_item_id => $shipping_item) {
 			$shipping_carrier['amount'] = floatval($shipping_item->get_total());
-		    $shipping_carrier['currency']  = $order->currency;
+		    $shipping_carrier['currency']  = $order->get_currency();
 		    $shipping_carrier['description']  = $shipping_item->get_name();
 		    $shipping_carrier['provider'] = $shipping_item->get_name();
 		    $shipping_carrier['service'] = $shipping_item->get_name();
@@ -503,7 +508,7 @@ function tap_init_gateway_class() {
 			    'name' => $item['data']->name,
 			    'description' => $description,
 			    'quantity' => intval($item['quantity']),
-			    'currency' => $order->currency,
+			    'currency' => $order->get_currency(),
 			    'amount' => $price
 			];
  			//echo '<pre>';var_dump($order_it);
@@ -656,7 +661,7 @@ function tap_init_gateway_class() {
 				if ($this->ui_mode == 'popup' || $this->ui_mode == 'redirect' ){
 			
 					wp_enqueue_script( 'tap_js', 'https://tap-sdks.b-cdn.net/checkout/1.5.0-beta/index.js', array('jquery') );
-					wp_register_script( 'woocommerce_tap', plugins_url( 'taap.js', __FILE__ ), 'gosell');
+					wp_register_script( 'woocommerce_tap', plugins_url( 'taap.js', __FILE__ ), array( 'jquery' ) );
 					wp_enqueue_style( 'tap-payment', plugins_url( 'tap-payment.css', __FILE__ ) );
 					wp_enqueue_script( 'woocommerce_tap' );
 				}
@@ -1055,10 +1060,16 @@ function tap_init_gateway_class() {
 					'redirect' => $redirct_Url
 				);
 			}
+
+			// Fallback for unsupported ui_mode
+			return array(
+				'result'   => 'failure',
+				'messages' => __( 'Invalid payment configuration.', 'tap-woocommerce' ),
+			);
 		}
 
 		public function tap_get_pages($title = false, $indent = true) {
-			$wp_pages = get_pages('sort_column=menu_order');
+			$wp_pages = get_pages( array( 'sort_column' => 'menu_order' ) );
 			$page_list = array();
 			if ($title) $page_list[] = $title;
 			foreach ($wp_pages as $page) {
@@ -1082,8 +1093,8 @@ function tap_init_gateway_class() {
 			global $post, $woocommerce;
 			
 			$order   = new WC_Order($order_id);
-			$transID = get_post_meta( $order->id, '_transaction_id');
-			$currency = $order->currency;
+			$transID = get_post_meta( $order->get_id(), '_transaction_id');
+			$currency = $order->get_currency();
 	 		$refund_url = 'https://api.tap.company/v2/refunds';
 	 		$refund_request['charge_id'] = $transID;
 	 		$refund_request['amount'] = $amount;
@@ -1122,17 +1133,21 @@ function tap_init_gateway_class() {
 			  	),
 			));
 
-			$response = curl_exec($curl);;
+			$response = curl_exec($curl);
 	 		$response = json_decode($response);
-	 		if ($response->id) {
+	 		if ( ! empty( $response->id ) ) {
 	 			if ( $response->status == 'PENDING') {
 	 				$order->add_order_note(sanitize_text_field('Tap Refund successful').("<br>").'Refund ID'.("<br>"). $response->id);
-	 						return true;
+	 				return true;
 	 			}
-	 		} 
-	 		else { 
-	 			return false;
+	 			// Refund was created but status is not PENDING
+	 			$order->add_order_note( sprintf( 'Tap Refund status: %s (ID: %s)', $response->status, $response->id ) );
+	 			return new WP_Error( 'tap_refund_failed', sprintf( __( 'Refund status: %s', 'tap-woocommerce' ), $response->status ) );
 	 		}
+
+	 		// API call failed or no response ID
+	 		$error_message = isset( $response->errors[0]->description ) ? $response->errors[0]->description : __( 'Unknown error', 'tap-woocommerce' );
+	 		return new WP_Error( 'tap_refund_error', $error_message );
 		}
    	}
 }

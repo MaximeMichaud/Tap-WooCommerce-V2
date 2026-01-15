@@ -6,7 +6,7 @@
  * Description: Take credit card payments on your store. (Features : All In One - Popup, Redirect
  * Author: Waqas Zeeshan
  * Author URI: https://tap.company/
- * Version: 2.2.2
+ * Version: 2.2.3
  */
 
 /* This action hook registers our PHP class as a WooCommerce payment gateway */
@@ -708,11 +708,13 @@ function tapwc_init_gateway_class() {
 				'GB' => '44',
 				'GD' => '1473',
 				'GE' => '995',
+				'GF' => '594',
 				'GH' => '233',
 				'GI' => '350',
 				'GL' => '299',
 				'GM' => '220',
 				'GN' => '224',
+				'GP' => '590',
 				'GQ' => '240',
 				'GR' => '30',
 				'GT' => '502',
@@ -771,6 +773,7 @@ function tapwc_init_gateway_class() {
 				'MN' => '976',
 				'MO' => '853',
 				'MP' => '1670',
+				'MQ' => '596',
 				'MR' => '222',
 				'MS' => '1664',
 				'MT' => '356',
@@ -806,6 +809,7 @@ function tapwc_init_gateway_class() {
 				'PW' => '680',
 				'PY' => '595',
 				'QA' => '974',
+				'RE' => '262',
 				'RO' => '40',
 				'RS' => '381',
 				'RU' => '7',

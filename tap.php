@@ -643,15 +643,19 @@ function tapwc_init_gateway_class() {
 		}
 
 		public function payment_scripts() {
-			if ( is_checkout() ) {
-				if ( $this->ui_mode === 'popup' || $this->ui_mode === 'redirect' ) {
-					// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion,WordPress.WP.EnqueuedResourceParameters.NotInFooter -- External CDN script
-					wp_enqueue_script( 'tap_js', 'https://tap-sdks.b-cdn.net/checkout/1.5.0-beta/index.js', array( 'jquery' ), null, false );
-					wp_register_script( 'woocommerce_tap', plugins_url( 'taap.js', __FILE__ ), array( 'jquery' ), '2.1.1', true );
-					wp_enqueue_style( 'tap-payment', plugins_url( 'tap-payment.css', __FILE__ ), array(), '2.1.1' );
-					wp_enqueue_script( 'woocommerce_tap' );
-				}
+			if ( $this->ui_mode !== 'popup' ) {
+				return;
 			}
+
+			if ( ! is_checkout_pay_page() ) {
+				return;
+			}
+
+			// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion,WordPress.WP.EnqueuedResourceParameters.NotInFooter -- External CDN script
+			wp_enqueue_script( 'tap_js', 'https://tap-sdks.b-cdn.net/checkout/1.5.0-beta/index.js', array( 'jquery' ), null, false );
+			wp_register_script( 'woocommerce_tap', plugins_url( 'taap.js', __FILE__ ), array( 'jquery', 'tap_js' ), '2.1.1', true );
+			wp_enqueue_style( 'tap-payment', plugins_url( 'tap-payment.css', __FILE__ ), array(), '2.1.1' );
+			wp_enqueue_script( 'woocommerce_tap' );
 		}
 
 		public function getStorePhoneCountryCode( $country_code ) {

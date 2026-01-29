@@ -118,20 +118,20 @@ function tapwc_init_gateway_class() {
 
 			if ( $status !== 'CAPTURED' && $status !== 'AUTHORIZED' ) {
 				$order->update_status( 'cancelled' );
-				$order->add_order_note( sanitize_text_field( 'Tap payment failed..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ) ) );
+				$order->add_order_note( sanitize_text_field( 'Tap payment failed..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ?? 'N/A' ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ?? 'N/A' ) ) );
 
 			}
 			// Compare amounts as floats to avoid string/number mismatch
 			if ( ( $order_amount === (float) $data['amount'] ) && ( $order_currency === $data['currency'] ) ) {
 				if ( $status === 'CAPTURED' ) {
 					$order->update_status( 'processing' );
-					$order->add_order_note( sanitize_text_field( 'Tap payment successful..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ) ) );
+					$order->add_order_note( sanitize_text_field( 'Tap payment successful..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ?? 'N/A' ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ?? 'N/A' ) ) );
 					wc_reduce_stock_levels( $order->get_id() );
 					update_option( 'webhook_debug', $_GET );
 				} elseif ( $status === 'AUTHORIZED' ) {
 					$order->update_status( 'pending' );
 					$order->add_order_note( sanitize_text_field( 'by post' ) );
-					$order->add_order_note( sanitize_text_field( 'Tap payment successful..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ) ) );
+					$order->add_order_note( sanitize_text_field( 'Tap payment successful..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ?? 'N/A' ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ?? 'N/A' ) ) );
 				}
 			} else {
 				if ( $data['status'] === 'CAPTURED' ) {
@@ -165,7 +165,7 @@ function tapwc_init_gateway_class() {
 					$refund_body = is_wp_error( $refund_response ) ? null : json_decode( wp_remote_retrieve_body( $refund_response ) );
 					$order->update_status( 'cancelled' );
 					$refund_id = $refund_body->id ?? 'N/A';
-					$order->add_order_note( sanitize_text_field( 'Tap payment declined..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ) . ( 'Refund ID' ) . $refund_id ) );
+					$order->add_order_note( sanitize_text_field( 'Tap payment declined..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ?? 'N/A' ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ?? 'N/A' ) . ( 'Refund ID' ) . $refund_id ) );
 				}
 
 				if ( $data['status'] === 'AUTHORIZED' ) {
@@ -182,7 +182,7 @@ function tapwc_init_gateway_class() {
 					);
 
 					$order->update_status( 'cancelled' );
-					$order->add_order_note( sanitize_text_field( 'Tap payment declined..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ) ) );
+					$order->add_order_note( sanitize_text_field( 'Tap payment declined..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ?? 'N/A' ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ?? 'N/A' ) ) );
 				}
 			}
 		}
@@ -237,11 +237,34 @@ function tapwc_init_gateway_class() {
 
 			$response = json_decode( wp_remote_retrieve_body( $api_response ) );
 
+			if ( ! is_object( $response ) || ! isset( $response->status ) ) {
+				$order->update_status( 'cancelled' );
+				$order->add_order_note( 'Tap API: invalid or empty response' );
+				return;
+			}
+
+			// @todo TEMPORARY DEBUG — remove once Tap API documents response fields for non-CAPTURED statuses.
+			// Tracks missing source/reference fields to confirm when they are absent (likely ABANDONED status).
+			// See: https://developers.tap.company/reference/charges
+			if ( ! isset( $response->source->payment_method ) || ! isset( $response->reference->payment ) ) {
+				$logger = wc_get_logger();
+				$logger->warning(
+					sprintf(
+						'Order #%d — incomplete Tap response (status: %s): %s',
+						$order_id,
+						$response->status ?? 'unknown',
+						wp_json_encode( $response )
+					),
+					array( 'source' => 'tap-payment-debug' )
+				);
+			}
+			// @todo END TEMPORARY DEBUG
+
 			$order_amount = (float) $order->get_total();
 			$order_currency = $order->get_currency();
 			if ( $response->status !== 'CAPTURED' && $response->status !== 'AUTHORIZED' ) {
 				$order->update_status( 'cancelled' );
-				$order->add_order_note( sanitize_text_field( 'Tap payment failed' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $tap_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $response->source->payment_method ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $response->reference->payment ) ) );
+				$order->add_order_note( sanitize_text_field( 'Tap payment failed' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $tap_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $response->source?->payment_method ?? 'N/A' ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $response->reference?->payment ?? 'N/A' ) ) );
 				$items = $order->get_items();
 				foreach ( $items as $item ) {
 					if ( ! $item instanceof WC_Order_Item_Product ) {
@@ -289,7 +312,7 @@ function tapwc_init_gateway_class() {
 						$order->payment_complete( $tap_id );
 						update_post_meta( $order->get_id(), '_transaction_id', $tap_id );
 						$order->set_transaction_id( $tap_id );
-						$order->add_order_note( sanitize_text_field( 'Tap payment successful' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $tap_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $response->source->payment_method ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $response->reference->payment ) ) );
+						$order->add_order_note( sanitize_text_field( 'Tap payment successful' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $tap_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $response->source?->payment_method ?? 'N/A' ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $response->reference?->payment ?? 'N/A' ) ) );
 						$order->payment_complete( $tap_id );
 						$woocommerce->cart->empty_cart();
 						if ( $this->success_page_id === '' || $this->success_page_id === 0 ) {
@@ -305,7 +328,7 @@ function tapwc_init_gateway_class() {
 				if ( ! empty( $tap_id ) && $this->payment_mode === 'authorize' ) {
 					if ( $response->status === 'AUTHORIZED' ) {
 						$order->update_status( 'pending' );
-						$order->add_order_note( sanitize_text_field( 'Tap payment successful' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $tap_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $response->source->payment_method ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $response->reference->payment ) ) );
+						$order->add_order_note( sanitize_text_field( 'Tap payment successful' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $tap_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $response->source?->payment_method ?? 'N/A' ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $response->reference?->payment ?? 'N/A' ) ) );
 						$woocommerce->cart->empty_cart();
 						if ( $this->success_page_id === '' || $this->success_page_id === 0 ) {
 							$redirect_url = $order->get_checkout_order_received_url();
@@ -357,7 +380,7 @@ function tapwc_init_gateway_class() {
 				$refund_body = is_wp_error( $refund_response ) ? null : json_decode( wp_remote_retrieve_body( $refund_response ) );
 				$refund_id   = $refund_body->id ?? 'N/A';
 				$order->update_status( 'cancelled' );
-				$order->add_order_note( sanitize_text_field( 'Tap declined payment error' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $tap_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $response->source->payment_method ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $response->reference->payment ) . ( 'Refund ID' ) . ( ':' ) . ( $refund_id ) ) );
+				$order->add_order_note( sanitize_text_field( 'Tap declined payment error' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $tap_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $response->source?->payment_method ?? 'N/A' ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $response->reference?->payment ?? 'N/A' ) . ( 'Refund ID' ) . ( ':' ) . ( $refund_id ) ) );
 
 				if ( $this->failer_page_id === '' || $this->failer_page_id === 0 ) {
 					$failure_url = $this->get_return_url( $order );
@@ -381,7 +404,7 @@ function tapwc_init_gateway_class() {
 				);
 
 				$order->update_status( 'cancelled' );
-				$order->add_order_note( sanitize_text_field( 'Tap declined payment error' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $tap_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $response->source->payment_method ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $response->reference->payment ) ) );
+				$order->add_order_note( sanitize_text_field( 'Tap declined payment error' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $tap_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $response->source?->payment_method ?? 'N/A' ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $response->reference?->payment ?? 'N/A' ) ) );
 
 				if ( $this->failer_page_id === '' || $this->failer_page_id === 0 ) {
 					$failure_url = $this->get_return_url( $order );

@@ -1068,7 +1068,15 @@ function tapwc_init_gateway_class() {
 				$obj = json_decode( $response_body );
 
 				// Log response for debugging
-				$order->add_order_note( 'Tap API response: ' . wp_json_encode( $obj ) );
+				$order->add_order_note(
+					sprintf(
+						"Tap payment initiated\nCharge ID: %s\nAmount: %s %s\nStatus: %s",
+						isset( $obj->id ) ? $obj->id : 'N/A',
+						isset( $obj->amount ) ? $obj->amount : 'N/A',
+						isset( $obj->currency ) ? $obj->currency : 'N/A',
+						isset( $obj->status ) ? $obj->status : 'N/A'
+					)
+				);
 
 				// Check for API errors first
 				if ( isset( $obj->errors ) && ! empty( $obj->errors ) ) {

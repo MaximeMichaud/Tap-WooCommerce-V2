@@ -17,5 +17,8 @@ composer.lock
 # Build artifacts
 *.zip
 
+# Test cache
+.phpunit.result.cache
+
 # Test stub directories
 wp-admin/

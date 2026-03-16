@@ -1169,7 +1169,7 @@ function tapwc_init_gateway_class() {
 			$refund_request['amount'] = $amount;
 			$refund_request['currency'] = $currency;
 			$refund_request['description'] = 'Description';
-			$refund_request['reason'] = $reason;
+			$refund_request['reason'] = ! empty( $reason ) ? $reason : 'Refund';
 			$refund_request['reference']['merchant']  = 'txn_0001';
 			$refund_request['metadata']['udf1'] = 'test1';
 			$refund_request['metadata']['udf2'] = 'test2';

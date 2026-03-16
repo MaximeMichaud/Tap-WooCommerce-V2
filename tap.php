@@ -6,7 +6,7 @@
  * Description: Take credit card payments on your store. (Features : All In One - Popup, Redirect
  * Author: Waqas Zeeshan
  * Author URI: https://tap.company/
- * Version: 2.2.5
+ * Version: 2.2.6
  */
 
 /* This action hook registers our PHP class as a WooCommerce payment gateway */
@@ -647,8 +647,8 @@ function tapwc_init_gateway_class() {
 
 			// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion,WordPress.WP.EnqueuedResourceParameters.NotInFooter -- External CDN script
 			wp_enqueue_script( 'tap_js', 'https://tap-sdks.b-cdn.net/checkout/1.5.0-beta/index.js', array( 'jquery' ), null, false );
-			wp_register_script( 'woocommerce_tap', plugins_url( 'taap.js', __FILE__ ), array( 'jquery', 'tap_js' ), '2.2.5', true );
-			wp_enqueue_style( 'tap-payment', plugins_url( 'tap-payment.css', __FILE__ ), array(), '2.2.5' );
+			wp_register_script( 'woocommerce_tap', plugins_url( 'taap.js', __FILE__ ), array( 'jquery', 'tap_js' ), '2.2.6', true );
+			wp_enqueue_style( 'tap-payment', plugins_url( 'tap-payment.css', __FILE__ ), array(), '2.2.6' );
 			wp_enqueue_script( 'woocommerce_tap' );
 		}
 
@@ -1151,7 +1151,7 @@ function tapwc_init_gateway_class() {
 			if ( empty( $transID ) ) {
 				$notes = wc_get_order_notes( array( 'order_id' => $order_id ) );
 				foreach ( $notes as $note ) {
-					if ( preg_match( '/(?:Charge ID|ID)\s*:\s*(chg_[A-Za-z0-9]+)/', wp_strip_all_tags( $note->content ), $matches ) ) {
+					if ( preg_match( '/(chg_[A-Za-z0-9]+)/', $note->content, $matches ) ) {
 						$transID = $matches[1];
 						$order->set_transaction_id( $transID );
 						$order->save();

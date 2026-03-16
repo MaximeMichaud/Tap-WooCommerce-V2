@@ -124,10 +124,9 @@ function tapwc_init_gateway_class() {
 			// Compare amounts as floats to avoid string/number mismatch
 			if ( ( $order_amount === (float) $data['amount'] ) && ( $order_currency === $data['currency'] ) ) {
 				if ( $status === 'CAPTURED' ) {
-					$order->update_status( 'processing' );
+					$order->payment_complete( $charge_id );
 					$order->add_order_note( sanitize_text_field( 'Tap payment successful..' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $charge_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $data['source']['payment_method'] ?? 'N/A' ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $data['reference']['payment'] ?? 'N/A' ) ) );
 					wc_reduce_stock_levels( $order->get_id() );
-					update_option( 'webhook_debug', $_GET );
 				} elseif ( $status === 'AUTHORIZED' ) {
 					$order->update_status( 'pending' );
 					$order->add_order_note( sanitize_text_field( 'by post' ) );

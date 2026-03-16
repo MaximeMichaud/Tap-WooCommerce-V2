@@ -308,10 +308,7 @@ function tapwc_init_gateway_class() {
 					if ( $response->status === 'CAPTURED' ) {
 						$order->update_status( 'processing' );
 						$order->payment_complete( $tap_id );
-						update_post_meta( $order->get_id(), '_transaction_id', $tap_id );
-						$order->set_transaction_id( $tap_id );
 						$order->add_order_note( sanitize_text_field( 'Tap payment successful' ) . ( '<br>' ) . ( 'ID' ) . ( ':' ) . ( $tap_id . ( '<br>' ) . ( 'Payment Type :' ) . ( $response->source?->payment_method ?? 'N/A' ) . ( '<br>' ) . ( 'Payment Ref:' ) . ( $response->reference?->payment ?? 'N/A' ) ) );
-						$order->payment_complete( $tap_id );
 						$woocommerce->cart->empty_cart();
 						if ( $this->success_page_id === '' || $this->success_page_id === 0 ) {
 							$redirect_url = $order->get_checkout_order_received_url();
@@ -1103,7 +1100,8 @@ function tapwc_init_gateway_class() {
 
 				// Store charge ID to prevent duplicate processing
 				if ( isset( $obj->id ) ) {
-					update_post_meta( $order->get_id(), '_tap_charge_id', $obj->id );
+					$order->update_meta_data( '_tap_charge_id', $obj->id );
+					$order->save();
 				}
 
 				return array(

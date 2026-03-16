@@ -1148,7 +1148,7 @@ function tapwc_init_gateway_class() {
 		public function process_refund( $order_id, $amount = null, $reason = '' ) {
 			global $post, $woocommerce;
 			$order   = new WC_Order( $order_id );
-			$transID = get_post_meta( $order->get_id(), '_transaction_id', true );
+			$transID = $order->get_transaction_id();
 			$currency = $order->get_currency();
 			$refund_url = 'https://api.tap.company/v2/refunds';
 			$refund_request['charge_id'] = $transID;

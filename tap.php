@@ -207,7 +207,7 @@ function tapwc_init_gateway_class() {
 				return;
 			}
 
-			if ( $this->testmode == '1' ) {
+			if ( $this->testmode === '1' ) {
 				$active_sk = $this->test_secret_key;
 			} else {
 				$active_sk = $this->live_secret_key;
@@ -235,7 +235,6 @@ function tapwc_init_gateway_class() {
 			}
 
 			$response = json_decode( wp_remote_retrieve_body( $api_response ) );
-
 
 			if ( ! is_object( $response ) || ! isset( $response->status ) ) {
 				$order->update_status( 'cancelled' );
@@ -283,9 +282,7 @@ function tapwc_init_gateway_class() {
 				wp_safe_redirect( $failure_url );
 				exit;
 			}
-			//echo $tap_id;exit;
 			if ( empty( $tap_id ) ) {
-				echo 'in empty';exit;
 				$items = $order->get_items();
 				foreach ( $items as $item ) {
 					if ( ! $item instanceof WC_Order_Item_Product ) {
@@ -321,7 +318,6 @@ function tapwc_init_gateway_class() {
 						} else {
 							$redirect_url = get_permalink( $this->success_page_id );
 						}
-						//echo $redirect_url;exit;
 						wp_safe_redirect( $redirect_url );
 						exit;
 					}
@@ -980,7 +976,7 @@ function tapwc_init_gateway_class() {
 				$avenue = isset( $_POST['billing_address_2'] ) ? sanitize_text_field( wp_unslash( $_POST['billing_address_2'] ) ) : $order->get_billing_address_2();
 				$order_amount  = $order->get_total();
 				$post_url      = get_site_url() . '/wc-api/tap_webhook';
-				if ( $this->testmode == '1' ) {
+				if ( $this->testmode === '1' ) {
 					$active_pk = $this->test_public_key;
 					$active_sk = $this->test_secret_key;
 				} else {
@@ -988,7 +984,6 @@ function tapwc_init_gateway_class() {
 					$active_sk = $this->live_secret_key;
 				}
 				$merchant_id = $this->merchant_id;
-				//echo $merchant_id;exit;
 				$ref = '';
 
 				if ( $currencyCode === 'KWD' || $currencyCode === 'BHD' || $currencyCode === 'OMR' ) {
@@ -1037,7 +1032,7 @@ function tapwc_init_gateway_class() {
 				$frequest = wp_json_encode( $trans_object, JSON_UNESCAPED_UNICODE );
 				$frequest = $frequest ? stripslashes( $frequest ) : '';
 
-				if ( $this->testmode == '1' ) {
+				if ( $this->testmode === '1' ) {
 					$active_pk = $this->test_public_key;
 					$active_sk = $this->test_secret_key;
 				} else {
@@ -1169,14 +1164,12 @@ function tapwc_init_gateway_class() {
 			$json_request = $json_request ? str_replace( '\/', '/', $json_request ) : '';
 			$json_request = str_replace( array( '[', ']' ), '', $json_request );
 
-			$grand_total = (float) $order->get_total(); 
+			$grand_total = (float) $order->get_total();
 
-			$available_to_refund = max( 0, $grand_total - abs((float) $order->get_total_refunded()) );
-
-
+			$available_to_refund = max( 0, $grand_total - abs( (float) $order->get_total_refunded() ) );
 
 			$active_sk = '';
-			if ( $this->testmode == '1' ) {
+			if ( $this->testmode === '1' ) {
 				$active_sk = $this->test_secret_key;
 			} else {
 				$active_sk = $this->live_secret_key;
@@ -1200,16 +1193,15 @@ function tapwc_init_gateway_class() {
 
 			$response = json_decode( wp_remote_retrieve_body( $api_response ) );
 
-			//echo '<pre>';print_r($response);exit;
 			if ( ! empty( $response->id ) ) {
-				if ( $response->status == 'REFUNDED' ) {
+				if ( $response->status === 'REFUNDED' ) {
 					$order->add_order_note( sanitize_text_field( 'Tap Refund successful' ) . ( '<br>' ) . 'Refund ID' . ( '<br>' ) . $response->id );
 					return true;
 				}
 				// Refund was created but status is not PENDING
 				$order->add_order_note( sprintf( 'Tap Refund status: %s (ID: %s)', $response->status, $response->id ) );
 
-				if ($response->amount == $available_to_refund) {
+				if ( $response->amount === $available_to_refund ) {
 					$order->update_status( 'refunded' );
 				}
 				/* translators: %s: refund status from Tap API */

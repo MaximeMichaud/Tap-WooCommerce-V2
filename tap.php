@@ -1146,6 +1146,23 @@ function tapwc_init_gateway_class() {
 			global $post, $woocommerce;
 			$order   = new WC_Order( $order_id );
 			$transID = $order->get_transaction_id();
+
+			// Fallback: extract charge ID from order notes for orders processed before HPOS fix
+			if ( empty( $transID ) ) {
+				$notes = wc_get_order_notes( array( 'order_id' => $order_id ) );
+				foreach ( $notes as $note ) {
+					if ( preg_match( '/(?:Charge ID|ID)\s*:\s*(chg_[A-Za-z0-9]+)/', wp_strip_all_tags( $note->content ), $matches ) ) {
+						$transID = $matches[1];
+						$order->set_transaction_id( $transID );
+						$order->save();
+						break;
+					}
+				}
+			}
+
+			if ( empty( $transID ) ) {
+				return new WP_Error( 'tap_refund_error', __( 'Charge ID not found for this order.', 'tap-woocommerce' ) );
+			}
 			$currency = $order->get_currency();
 			$refund_url = 'https://api.tap.company/v2/refunds';
 			$refund_request['charge_id'] = $transID;

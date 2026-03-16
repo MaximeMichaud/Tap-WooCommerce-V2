@@ -1147,6 +1147,11 @@ function tapwc_init_gateway_class() {
 			$order   = new WC_Order( $order_id );
 			$transID = $order->get_transaction_id();
 
+			// Clean up transaction ID - extract charge ID if extra text is appended
+			if ( ! empty( $transID ) && preg_match( '/(chg_[A-Za-z0-9]*[0-9])/', $transID, $clean_match ) ) {
+				$transID = $clean_match[1];
+			}
+
 			// Fallback: extract charge ID from order notes for orders processed before HPOS fix
 			if ( empty( $transID ) ) {
 				$notes = wc_get_order_notes( array( 'order_id' => $order_id ) );

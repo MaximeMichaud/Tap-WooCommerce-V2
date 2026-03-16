@@ -1170,10 +1170,7 @@ function tapwc_init_gateway_class() {
 			$refund_request['currency'] = $currency;
 			$refund_request['description'] = 'Description';
 			$refund_request['reason'] = ! empty( $reason ) ? $reason : 'Refund';
-			$refund_request['reference']['merchant']  = 'txn_0001';
-			$refund_request['metadata']['udf1'] = 'test1';
-			$refund_request['metadata']['udf2'] = 'test2';
-			$refund_request['post']['url']  = 'http://your_url.com/post';
+			$refund_request['reference']['merchant'] = 'refund_' . $order_id . '_' . time();
 			$json_request = wp_json_encode( $refund_request );
 			$json_request = $json_request ? str_replace( '\/', '/', $json_request ) : '';
 			$json_request = str_replace( array( '[', ']' ), '', $json_request );
